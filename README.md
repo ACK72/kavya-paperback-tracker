@@ -1,5 +1,5 @@
 # Kavya Tracker ![Generic badge](https://img.shields.io/badge/version-0.1.3-blue.svg)
-Kavya Tracker, A Synchronization helper for [Kavya](https://www.kavitareader.com/)
+Kavya Tracker, A Synchronization helper for [Kavya](https://github.com/ACK72/kavya-paperback)
 
 
 ## Installation
