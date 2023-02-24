@@ -117,19 +117,7 @@ export class Kavya extends Tracker {
 
 					const chapterResponse = await this.requestManager.schedule(chapterRequest, 1)
 					const chapterResult = JSON.parse(chapterResponse?.data);
-
-					// rome-ignore lint/suspicious/noExplicitAny: <explanation>
-					const promises: Promise<any>[] = [];
 					
-					const markRequest = createRequestObject({
-						url: `${kavitaAPIUrl}/Reader/mark-multiple-read`,
-						data: JSON.stringify({
-							seriesId: chapterResult.seriesId,
-							volumeIds: [chapterResult.volumeId],
-							chapterIds: [parseInt(readAction.sourceChapterId)]
-						}),
-						method: 'POST',
-					})
 					const progressRequest = createRequestObject({
 						url: `${kavitaAPIUrl}/Reader/progress`,
 						data: JSON.stringify({
@@ -142,12 +130,9 @@ export class Kavya extends Tracker {
 						method: 'POST',
 					})
 
-					promises.push(this.requestManager.schedule(markRequest, 1).then((response) => response.status < 400))
-					promises.push(this.requestManager.schedule(progressRequest, 1).then((response) => response.status < 400))
+					const progressResponse = await this.requestManager.schedule(progressRequest, 1)
 
-					const [markResult, progressResult] = await Promise.all(promises);
-				
-					if(markResult && progressResult) {
+					if(progressResponse.status < 400) {
 						await actionQueue.discardChapterReadAction(readAction)
 					} else {
 						await actionQueue.retryChapterReadAction(readAction)
