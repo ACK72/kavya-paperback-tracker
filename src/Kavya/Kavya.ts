@@ -10,6 +10,7 @@ import {
 	Tracker,
 	TrackerActionQueue
 } from 'paperback-extensions-common'
+import { CacheManager } from './CacheManager';
 import {
 	KavitaRequestInterceptor,
 	getKavitaAPIUrl,
@@ -37,6 +38,8 @@ export const KavyaInfo: SourceInfo = {
 
 export class Kavya extends Tracker {
 	stateManager = createSourceStateManager({});
+
+	cacheManager = new CacheManager();
 	interceptor = new KavitaRequestInterceptor(this.stateManager);
 
 	requestManager = createRequestManager({
@@ -68,7 +71,7 @@ export class Kavya extends Tracker {
 
 	// rome-ignore lint/suspicious/noExplicitAny: <explanation>
 	async getSearchResults(searchQuery: SearchRequest, metadata: any): Promise<PagedResults> {
-		return await searchRequest(searchQuery, metadata, this.requestManager, this.interceptor, this.stateManager);
+		return await searchRequest(searchQuery, metadata, this.requestManager, this.interceptor, this.stateManager, this.cacheManager);
 	}
 
 	getMangaForm(_: string): Form {
@@ -132,7 +135,7 @@ export class Kavya extends Tracker {
 						data: JSON.stringify({
 							volumeId: chapterResult.volumeId,
 							chapterId: parseInt(readAction.sourceChapterId),
-							pageNum: chapterResult.pages - 1,
+							pageNum: chapterResult.pages,
 							seriesId: chapterResult.seriesId,
 							libraryId: chapterResult.libraryId
 						}),
