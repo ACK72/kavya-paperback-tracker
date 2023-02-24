@@ -614,7 +614,7 @@ const CacheManager_1 = require("./CacheManager");
 const Common_1 = require("./Common");
 const Search_1 = require("./Search");
 exports.KavyaInfo = {
-    version: '0.1.1',
+    version: '0.1.2',
     name: 'Kavya Tracker',
     icon: 'icon.png',
     author: 'ACK72',
@@ -709,17 +709,6 @@ class Kavya extends paperback_extensions_common_1.Tracker {
                         });
                         const chapterResponse = yield this.requestManager.schedule(chapterRequest, 1);
                         const chapterResult = JSON.parse(chapterResponse === null || chapterResponse === void 0 ? void 0 : chapterResponse.data);
-                        // rome-ignore lint/suspicious/noExplicitAny: <explanation>
-                        const promises = [];
-                        const markRequest = createRequestObject({
-                            url: `${kavitaAPIUrl}/Reader/mark-multiple-read`,
-                            data: JSON.stringify({
-                                seriesId: chapterResult.seriesId,
-                                volumeIds: [chapterResult.volumeId],
-                                chapterIds: [parseInt(readAction.sourceChapterId)]
-                            }),
-                            method: 'POST',
-                        });
                         const progressRequest = createRequestObject({
                             url: `${kavitaAPIUrl}/Reader/progress`,
                             data: JSON.stringify({
@@ -731,10 +720,8 @@ class Kavya extends paperback_extensions_common_1.Tracker {
                             }),
                             method: 'POST',
                         });
-                        promises.push(this.requestManager.schedule(markRequest, 1).then((response) => response.status < 400));
-                        promises.push(this.requestManager.schedule(progressRequest, 1).then((response) => response.status < 400));
-                        const [markResult, progressResult] = yield Promise.all(promises);
-                        if (markResult && progressResult) {
+                        const progressResponse = yield this.requestManager.schedule(progressRequest, 1);
+                        if (progressResponse.status < 400) {
                             yield actionQueue.discardChapterReadAction(readAction);
                         }
                         else {
