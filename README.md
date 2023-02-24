@@ -1,4 +1,4 @@
-# Kavya Tracker ![Generic badge](https://img.shields.io/badge/version-0.1.0-blue.svg)
+# Kavya Tracker ![Generic badge](https://img.shields.io/badge/version-0.1.1-blue.svg)
 Kavya Tracker, A Synchronization helper for [Kavya](https://www.kavitareader.com/)
 
 
