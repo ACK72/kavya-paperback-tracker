@@ -614,7 +614,7 @@ const CacheManager_1 = require("./CacheManager");
 const Common_1 = require("./Common");
 const Search_1 = require("./Search");
 exports.KavyaInfo = {
-    version: '0.1.2',
+    version: '0.1.3',
     name: 'Kavya Tracker',
     icon: 'icon.png',
     author: 'ACK72',
