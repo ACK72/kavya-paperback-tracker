@@ -94,7 +94,6 @@ export class Kavya extends Tracker {
 	}
 
 	async processActionQueue(actionQueue: TrackerActionQueue): Promise<void> {
-		log('Processing action queue')
 		const chapterReadActions = await actionQueue.queuedChapterReadActions();
 		const kavitaAPIUrl = await getKavitaAPIUrl(this.stateManager);
 
