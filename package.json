@@ -1,7 +1,7 @@
 {
 	"name": "trackers-main",
 	"repositoryName": "ACK72's Trackers",
-	"version": "0.1.3",
+	"version": "0.1.4",
 	"description": "Kavya trackers for Paperback",
 	"main": "lib/index.js",
 	"scripts": {
