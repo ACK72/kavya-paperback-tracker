@@ -614,7 +614,7 @@ const CacheManager_1 = require("./CacheManager");
 const Common_1 = require("./Common");
 const Search_1 = require("./Search");
 exports.KavyaInfo = {
-    version: '0.1.3',
+    version: '0.1.4',
     name: 'Kavya Tracker',
     icon: 'icon.png',
     author: 'ACK72',
@@ -688,7 +688,6 @@ class Kavya extends paperback_extensions_common_1.Tracker {
     }
     processActionQueue(actionQueue) {
         return __awaiter(this, void 0, void 0, function* () {
-            (0, Common_1.log)('Processing action queue');
             const chapterReadActions = yield actionQueue.queuedChapterReadActions();
             const kavitaAPIUrl = yield (0, Common_1.getKavitaAPIUrl)(this.stateManager);
             for (const readAction of chapterReadActions) {
