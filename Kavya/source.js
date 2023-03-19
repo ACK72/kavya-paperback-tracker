@@ -442,11 +442,14 @@ class KavitaRequestInterceptor {
         });
     }
     interceptRequest(request) {
+        var _a;
         return __awaiter(this, void 0, void 0, function* () {
-            request.headers = {
-                'Authorization': this.authorization,
-                'Content-Type': typeof request.data === 'string' ? 'application/json' : 'text/html'
-            };
+            request.headers = Object.assign(Object.assign(Object.assign({}, request.headers), (typeof request.data === 'string' ? { 'Content-Type': 'application/json' } : {})), { 'Authorization': this.authorization });
+            if (request.url.startsWith('IMAGE*')) {
+                // request.url = request.url.replace('IMAGE*', '').replace(/(?<=\/image)(.*)(?=\?chapterId=)/gm, '');
+                request.url = (_a = request.url.split('*').pop()) !== null && _a !== void 0 ? _a : '';
+                request.url = `${request.url.split('/image')[0]}/image?chapterId=${request.url.split('?chapterId=')[1]}`;
+            }
             return request;
         });
     }
@@ -614,7 +617,7 @@ const CacheManager_1 = require("./CacheManager");
 const Common_1 = require("./Common");
 const Search_1 = require("./Search");
 exports.KavyaInfo = {
-    version: '1.0.0',
+    version: '1.0.1',
     name: 'Kavya Tracker',
     icon: 'icon.png',
     author: 'ACK72',
