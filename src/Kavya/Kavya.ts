@@ -74,22 +74,87 @@ export class Kavya extends Tracker {
 		return await searchRequest(searchQuery, metadata, this.requestManager, this.interceptor, this.stateManager, this.cacheManager);
 	}
 
-	getMangaForm(_: string): Form {
+	// @ts-ignore
+	getMangaForm(mangaId: string): Form {
 		return createForm({
-			sections: async () => [],
-			onSubmit: () => {
-				return Promise.resolve()
+			sections: async () => {
+				const kavitaAPIUrl = await getKavitaAPIUrl(this.stateManager);
+
+				const request = createRequestObject({
+					url: `${kavitaAPIUrl}/Series/${mangaId}`,
+					method: 'GET',
+				});
+				const response = await this.requestManager.schedule(request, 1);
+				const result = JSON.parse(response?.data);
+
+				return [
+					createSection({
+						id: 'seriesInfo',
+						header: 'Info',
+						rows: async () => [
+							createLabel({
+								id: 'seriesId',
+								label: 'SeriesID',
+								value: mangaId
+							}),
+							createLabel({
+								id: 'libraryId',
+								label: 'LibraryID',
+								value: `${result.libraryId}`
+							}),
+							createLabel({
+								id: 'pagesRead',
+								label: 'Pages Read',
+								value: `${result.pagesRead} / ${result.pages}`
+							})
+						]
+					}),
+					createSection({
+						id: 'userReview',
+						header: 'Rating & Review',
+						rows: async () => [
+							//@ts-ignore
+							createStepper({
+								id: 'rating',
+								label: 'Rating',
+								value: result.userRating ?? 0,
+								min: 0,
+								max: 5,
+								step: 1
+							}),
+							createInputField({
+								id: 'review',
+								// @ts-ignore
+								label: undefined,
+								placeholder: 'Review',
+								value: result.userReview ?? '',
+								maskInput: false
+							})
+						]
+					})
+				]
 			},
-			validate: async () => true 
+			onSubmit: async (values) => {
+				const kavitaAPIUrl = await getKavitaAPIUrl(this.stateManager);
+
+				await this.requestManager.schedule(createRequestObject({
+                    url: `${kavitaAPIUrl}/Series/update-rating`,
+					data: JSON.stringify({seriesId: mangaId, userRating: values.rating, userReview: values.review}),
+                    method: 'POST'
+                }), 1);
+			},
+			validate: async () => true
 		})
 	}
-	
+
 	async getTrackedManga(mangaId: string): Promise<TrackedManga> {
 		return createTrackedManga({
 			id: mangaId,
-			mangaInfo: createMangaInfo(
-				await getSeriesDetails(mangaId, this.requestManager, this.stateManager)
-			)
+			mangaInfo: createMangaInfo({
+				...(await getSeriesDetails(mangaId, this.requestManager, this.stateManager)),
+				// @ts-ignore
+				status: 'Reading'
+			})
 		})
 	}
 
@@ -106,7 +171,7 @@ export class Kavya extends Tracker {
 					await actionQueue.retryChapterReadAction(readAction);
 					continue;
 				}
-					
+
 				try {
 					const chapterRequest = createRequestObject({
 						url: `${kavitaAPIUrl}/Reader/chapter-info`,
@@ -116,7 +181,7 @@ export class Kavya extends Tracker {
 
 					const chapterResponse = await this.requestManager.schedule(chapterRequest, 1)
 					const chapterResult = JSON.parse(chapterResponse?.data);
-					
+
 					const progressRequest = createRequestObject({
 						url: `${kavitaAPIUrl}/Reader/progress`,
 						data: JSON.stringify({
