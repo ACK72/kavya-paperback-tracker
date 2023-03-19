@@ -384,7 +384,7 @@ class CacheManager {
         var _a;
         const time = new Date();
         const key = this.getHash(str);
-        this.cachedData = Object.fromEntries(Object.entries(this.cachedData).filter(([key, value]) => 0 < (time.getTime() - value.time.getTime()) && (time.getTime() - value.time.getTime()) < 180 * 1000));
+        this.cachedData = Object.fromEntries(Object.entries(this.cachedData).filter(([_, value]) => 0 < (time.getTime() - value.time.getTime()) && (time.getTime() - value.time.getTime()) < 180 * 1000));
         return (_a = this.cachedData[key]) === null || _a === void 0 ? void 0 : _a.data;
     }
     // rome-ignore lint/suspicious/noExplicitAny: <explanation>
@@ -500,7 +500,7 @@ function getSeriesDetails(mangaId, requestManager, stateManager) {
                 tags: tags
             }));
         }
-        return createManga({
+        return {
             id: mangaId,
             titles: [seriesResult.name],
             image: `${kavitaAPIUrl}/image/series-cover?seriesId=${mangaId}`,
@@ -511,7 +511,7 @@ function getSeriesDetails(mangaId, requestManager, stateManager) {
             desc: metadataResult.summary.replace(/<[^>]+>/g, ''),
             tags: tagSections,
             lastUpdate: new Date(seriesResult.lastChapterAdded)
-        });
+        };
     });
 }
 exports.getSeriesDetails = getSeriesDetails;
@@ -531,7 +531,7 @@ function searchRequestToString(searchQuery) {
     });
 }
 exports.searchRequestToString = searchRequestToString;
-// 
+//
 // Kavya Setting State Methods
 //
 // rome-ignore lint/suspicious/noExplicitAny: <explanation>
@@ -614,7 +614,7 @@ const CacheManager_1 = require("./CacheManager");
 const Common_1 = require("./Common");
 const Search_1 = require("./Search");
 exports.KavyaInfo = {
-    version: '0.1.4',
+    version: '1.0.0',
     name: 'Kavya Tracker',
     icon: 'icon.png',
     author: 'ACK72',
@@ -669,12 +669,77 @@ class Kavya extends paperback_extensions_common_1.Tracker {
             return yield (0, Search_1.searchRequest)(searchQuery, metadata, this.requestManager, this.interceptor, this.stateManager, this.cacheManager);
         });
     }
-    getMangaForm(_) {
+    // @ts-ignore
+    getMangaForm(mangaId) {
         return createForm({
-            sections: () => __awaiter(this, void 0, void 0, function* () { return []; }),
-            onSubmit: () => {
-                return Promise.resolve();
-            },
+            sections: () => __awaiter(this, void 0, void 0, function* () {
+                const kavitaAPIUrl = yield (0, Common_1.getKavitaAPIUrl)(this.stateManager);
+                const request = createRequestObject({
+                    url: `${kavitaAPIUrl}/Series/${mangaId}`,
+                    method: 'GET',
+                });
+                const response = yield this.requestManager.schedule(request, 1);
+                const result = JSON.parse(response === null || response === void 0 ? void 0 : response.data);
+                return [
+                    createSection({
+                        id: 'seriesInfo',
+                        header: 'Info',
+                        rows: () => __awaiter(this, void 0, void 0, function* () {
+                            return [
+                                createLabel({
+                                    id: 'seriesId',
+                                    label: 'SeriesID',
+                                    value: mangaId
+                                }),
+                                createLabel({
+                                    id: 'libraryId',
+                                    label: 'LibraryID',
+                                    value: `${result.libraryId}`
+                                }),
+                                createLabel({
+                                    id: 'pagesRead',
+                                    label: 'Pages Read',
+                                    value: `${result.pagesRead} / ${result.pages}`
+                                })
+                            ];
+                        })
+                    }),
+                    createSection({
+                        id: 'userReview',
+                        header: 'Rating & Review',
+                        rows: () => __awaiter(this, void 0, void 0, function* () {
+                            var _a, _b;
+                            return [
+                                //@ts-ignore
+                                createStepper({
+                                    id: 'rating',
+                                    label: 'Rating',
+                                    value: (_a = result.userRating) !== null && _a !== void 0 ? _a : 0,
+                                    min: 0,
+                                    max: 5,
+                                    step: 1
+                                }),
+                                createInputField({
+                                    id: 'review',
+                                    // @ts-ignore
+                                    label: undefined,
+                                    placeholder: 'Review',
+                                    value: (_b = result.userReview) !== null && _b !== void 0 ? _b : '',
+                                    maskInput: false
+                                })
+                            ];
+                        })
+                    })
+                ];
+            }),
+            onSubmit: (values) => __awaiter(this, void 0, void 0, function* () {
+                const kavitaAPIUrl = yield (0, Common_1.getKavitaAPIUrl)(this.stateManager);
+                yield this.requestManager.schedule(createRequestObject({
+                    url: `${kavitaAPIUrl}/Series/update-rating`,
+                    data: JSON.stringify({ seriesId: mangaId, userRating: values.rating, userReview: values.review }),
+                    method: 'POST'
+                }), 1);
+            }),
             validate: () => __awaiter(this, void 0, void 0, function* () { return true; })
         });
     }
@@ -682,7 +747,9 @@ class Kavya extends paperback_extensions_common_1.Tracker {
         return __awaiter(this, void 0, void 0, function* () {
             return createTrackedManga({
                 id: mangaId,
-                mangaInfo: createMangaInfo(yield (0, Common_1.getSeriesDetails)(mangaId, this.requestManager, this.stateManager))
+                mangaInfo: createMangaInfo(Object.assign(Object.assign({}, (yield (0, Common_1.getSeriesDetails)(mangaId, this.requestManager, this.stateManager))), { 
+                    // @ts-ignore
+                    status: 'Reading' }))
             });
         });
     }
