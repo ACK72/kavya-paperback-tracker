@@ -20,7 +20,7 @@ import {
 import { searchRequest } from './Search';
 
 export const KavyaInfo: SourceInfo = {
-	version: '0.1.4',
+	version: '1.0.0',
 	name: 'Kavya Tracker',
 	icon: 'icon.png',
 	author: 'ACK72',
