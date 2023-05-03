@@ -13,7 +13,7 @@ import {
 import { CacheManager } from './CacheManager';
 import {
 	KavitaRequestInterceptor,
-	getKavitaAPIUrl,
+	getKavitaAPI,
 	log,
 	getSeriesDetails
 } from './Common';
@@ -78,10 +78,10 @@ export class Kavya extends Tracker {
 	getMangaForm(mangaId: string): Form {
 		return createForm({
 			sections: async () => {
-				const kavitaAPIUrl = await getKavitaAPIUrl(this.stateManager);
+				const kavitaAPI = await getKavitaAPI(this.stateManager);
 
 				const request = createRequestObject({
-					url: `${kavitaAPIUrl}/Series/${mangaId}`,
+					url: `${kavitaAPI.url}/Series/${mangaId}`,
 					method: 'GET',
 				});
 				const response = await this.requestManager.schedule(request, 1);
@@ -135,10 +135,10 @@ export class Kavya extends Tracker {
 				]
 			},
 			onSubmit: async (values) => {
-				const kavitaAPIUrl = await getKavitaAPIUrl(this.stateManager);
+				const kavitaAPI = await getKavitaAPI(this.stateManager);
 
 				await this.requestManager.schedule(createRequestObject({
-                    url: `${kavitaAPIUrl}/Series/update-rating`,
+                    url: `${kavitaAPI.url}/Series/update-rating`,
 					data: JSON.stringify({seriesId: mangaId, userRating: values.rating, userReview: values.review}),
                     method: 'POST'
                 }), 1);
@@ -160,7 +160,7 @@ export class Kavya extends Tracker {
 
 	async processActionQueue(actionQueue: TrackerActionQueue): Promise<void> {
 		const chapterReadActions = await actionQueue.queuedChapterReadActions();
-		const kavitaAPIUrl = await getKavitaAPIUrl(this.stateManager);
+		const kavitaAPI = await getKavitaAPI(this.stateManager);
 
 		for (const readAction of chapterReadActions) {
 			if (readAction.sourceId !== 'Kavya') {
@@ -174,7 +174,7 @@ export class Kavya extends Tracker {
 
 				try {
 					const chapterRequest = createRequestObject({
-						url: `${kavitaAPIUrl}/Reader/chapter-info`,
+						url: `${kavitaAPI.url}/Reader/chapter-info`,
 						param: `?chapterId=${readAction.sourceChapterId}`,
 						method: 'GET',
 					})
@@ -183,7 +183,7 @@ export class Kavya extends Tracker {
 					const chapterResult = JSON.parse(chapterResponse?.data);
 
 					const progressRequest = createRequestObject({
-						url: `${kavitaAPIUrl}/Reader/progress`,
+						url: `${kavitaAPI.url}/Reader/progress`,
 						data: JSON.stringify({
 							volumeId: chapterResult.volumeId,
 							chapterId: parseInt(readAction.sourceChapterId),
