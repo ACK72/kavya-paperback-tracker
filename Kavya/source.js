@@ -406,7 +406,7 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.log = exports.getOptions = exports.getAuthorizationString = exports.getKavitaAPIKey = exports.getKavitaAPIUrl = exports.DEFAULT_VALUES = exports.searchRequestToString = exports.reqeustToString = exports.getSeriesDetails = exports.getServerUnavailableMangaTiles = exports.KavitaRequestInterceptor = exports.KAVITA_PUBLICATION_STATUS = void 0;
+exports.log = exports.getOptions = exports.getAuthorizationString = exports.getKavitaAPI = exports.DEFAULT_VALUES = exports.searchRequestToString = exports.reqeustToString = exports.getSeriesDetails = exports.getServerUnavailableMangaTiles = exports.KavitaRequestInterceptor = exports.KAVITA_PUBLICATION_STATUS = void 0;
 const paperback_extensions_common_1 = require("paperback-extensions-common");
 //
 // Kavya Common Class & Methods
@@ -468,14 +468,13 @@ exports.getServerUnavailableMangaTiles = getServerUnavailableMangaTiles;
 function getSeriesDetails(mangaId, requestManager, stateManager) {
     var _a, _b, _c, _d, _e, _f, _g;
     return __awaiter(this, void 0, void 0, function* () {
-        const kavitaAPIUrl = yield getKavitaAPIUrl(stateManager);
-        const kavitaAPIKey = yield getKavitaAPIKey(stateManager);
+        const kavitaAPI = yield getKavitaAPI(stateManager);
         const seriesRequest = createRequestObject({
-            url: `${kavitaAPIUrl}/Series/${mangaId}`,
+            url: `${kavitaAPI.url}/Series/${mangaId}`,
             method: 'GET',
         });
         const metadataRequest = createRequestObject({
-            url: `${kavitaAPIUrl}/Series/metadata`,
+            url: `${kavitaAPI.url}/Series/metadata`,
             param: `?seriesId=${mangaId}`,
             method: 'GET',
         });
@@ -505,7 +504,7 @@ function getSeriesDetails(mangaId, requestManager, stateManager) {
         return {
             id: mangaId,
             titles: [seriesResult.name],
-            image: `${kavitaAPIUrl}/image/series-cover?seriesId=${mangaId}&apiKey=${kavitaAPIKey}`,
+            image: `${kavitaAPI.url}/image/series-cover?seriesId=${mangaId}&apiKey=${kavitaAPI.key}`,
             rating: seriesResult.userRating,
             status: (_g = exports.KAVITA_PUBLICATION_STATUS[metadataResult.publicationStatus]) !== null && _g !== void 0 ? _g : paperback_extensions_common_1.MangaStatus.UNKNOWN,
             artist: typeof metadataResult.pencillers[0] === 'undefined' ? '' : metadataResult.pencillers[0].name,
@@ -549,33 +548,26 @@ exports.DEFAULT_VALUES = {
     displayReadInstedOfUnread: true,
     pageSize: 40
 };
-function getKavitaAPIUrl(stateManager) {
-    var _a;
-    return __awaiter(this, void 0, void 0, function* () {
-        return (_a = (yield stateManager.retrieve('kavitaAPIUrl'))) !== null && _a !== void 0 ? _a : exports.DEFAULT_VALUES.kavitaAPIUrl;
-    });
-}
-exports.getKavitaAPIUrl = getKavitaAPIUrl;
-function getKavitaAPIKey(stateManager) {
-    var _a;
-    return __awaiter(this, void 0, void 0, function* () {
-        return (_a = (yield stateManager.retrieve('kavitaAPIKey'))) !== null && _a !== void 0 ? _a : exports.DEFAULT_VALUES.kavitaAPIKey;
-    });
-}
-exports.getKavitaAPIKey = getKavitaAPIKey;
-function getAuthorizationString(stateManager) {
+function getKavitaAPI(stateManager) {
     var _a, _b;
     return __awaiter(this, void 0, void 0, function* () {
-        const apiUri = (_a = (yield stateManager.retrieve('kavitaAPIUrl'))) !== null && _a !== void 0 ? _a : exports.DEFAULT_VALUES.kavitaAPIUrl;
-        const apiKey = (_b = (yield stateManager.keychain.retrieve('kavitaAPIKey'))) !== null && _b !== void 0 ? _b : exports.DEFAULT_VALUES.kavitaAPIKey;
+        const kavitaAPIUrl = (_a = (yield stateManager.retrieve('kavitaAPIUrl'))) !== null && _a !== void 0 ? _a : exports.DEFAULT_VALUES.kavitaAPIUrl;
+        const kavitaAPIKey = (_b = (yield stateManager.keychain.retrieve('kavitaAPIKey'))) !== null && _b !== void 0 ? _b : exports.DEFAULT_VALUES.kavitaAPIKey;
+        return { url: kavitaAPIUrl, key: kavitaAPIKey };
+    });
+}
+exports.getKavitaAPI = getKavitaAPI;
+function getAuthorizationString(stateManager) {
+    return __awaiter(this, void 0, void 0, function* () {
+        const kavitaAPI = yield getKavitaAPI(stateManager);
         const manager = createRequestManager({
             requestsPerSecond: 4,
             requestTimeout: 20000
         });
         const request = createRequestObject({
-            url: `${apiUri}/Plugin/authenticate`,
-            param: `?apiKey=${apiKey}&pluginName=Kavya`,
-            method: 'POST',
+            url: `${kavitaAPI.url}/Plugin/authenticate`,
+            param: `?apiKey=${kavitaAPI.key}&pluginName=Kavya`,
+            method: 'POST'
         });
         const response = yield manager.schedule(request, 1);
         const token = typeof response.data === 'string' ? JSON.parse(response.data).token : undefined;
@@ -623,7 +615,7 @@ const CacheManager_1 = require("./CacheManager");
 const Common_1 = require("./Common");
 const Search_1 = require("./Search");
 exports.KavyaInfo = {
-    version: '1.0.2',
+    version: '1.0.3',
     name: 'Kavya Tracker',
     icon: 'icon.png',
     author: 'ACK72',
@@ -682,9 +674,9 @@ class Kavya extends paperback_extensions_common_1.Tracker {
     getMangaForm(mangaId) {
         return createForm({
             sections: () => __awaiter(this, void 0, void 0, function* () {
-                const kavitaAPIUrl = yield (0, Common_1.getKavitaAPIUrl)(this.stateManager);
+                const kavitaAPI = yield (0, Common_1.getKavitaAPI)(this.stateManager);
                 const request = createRequestObject({
-                    url: `${kavitaAPIUrl}/Series/${mangaId}`,
+                    url: `${kavitaAPI.url}/Series/${mangaId}`,
                     method: 'GET',
                 });
                 const response = yield this.requestManager.schedule(request, 1);
@@ -742,9 +734,9 @@ class Kavya extends paperback_extensions_common_1.Tracker {
                 ];
             }),
             onSubmit: (values) => __awaiter(this, void 0, void 0, function* () {
-                const kavitaAPIUrl = yield (0, Common_1.getKavitaAPIUrl)(this.stateManager);
+                const kavitaAPI = yield (0, Common_1.getKavitaAPI)(this.stateManager);
                 yield this.requestManager.schedule(createRequestObject({
-                    url: `${kavitaAPIUrl}/Series/update-rating`,
+                    url: `${kavitaAPI.url}/Series/update-rating`,
                     data: JSON.stringify({ seriesId: mangaId, userRating: values.rating, userReview: values.review }),
                     method: 'POST'
                 }), 1);
@@ -765,7 +757,7 @@ class Kavya extends paperback_extensions_common_1.Tracker {
     processActionQueue(actionQueue) {
         return __awaiter(this, void 0, void 0, function* () {
             const chapterReadActions = yield actionQueue.queuedChapterReadActions();
-            const kavitaAPIUrl = yield (0, Common_1.getKavitaAPIUrl)(this.stateManager);
+            const kavitaAPI = yield (0, Common_1.getKavitaAPI)(this.stateManager);
             for (const readAction of chapterReadActions) {
                 if (readAction.sourceId !== 'Kavya') {
                     (0, Common_1.log)(`Manga ${readAction.mangaId} from source ${readAction.sourceId} can not be used as it does not come from Kavya. Discarding`);
@@ -778,14 +770,14 @@ class Kavya extends paperback_extensions_common_1.Tracker {
                     }
                     try {
                         const chapterRequest = createRequestObject({
-                            url: `${kavitaAPIUrl}/Reader/chapter-info`,
+                            url: `${kavitaAPI.url}/Reader/chapter-info`,
                             param: `?chapterId=${readAction.sourceChapterId}`,
                             method: 'GET',
                         });
                         const chapterResponse = yield this.requestManager.schedule(chapterRequest, 1);
                         const chapterResult = JSON.parse(chapterResponse === null || chapterResponse === void 0 ? void 0 : chapterResponse.data);
                         const progressRequest = createRequestObject({
-                            url: `${kavitaAPIUrl}/Reader/progress`,
+                            url: `${kavitaAPI.url}/Reader/progress`,
                             data: JSON.stringify({
                                 volumeId: chapterResult.volumeId,
                                 chapterId: parseInt(readAction.sourceChapterId),
@@ -855,14 +847,13 @@ metadata, requestManager, interceptor, stateManager, cacheManager) {
                 results: (0, Common_1.getServerUnavailableMangaTiles)(),
             });
         }
-        const kavitaAPIUrl = yield (0, Common_1.getKavitaAPIUrl)(stateManager);
-        const kavitaAPIKey = yield (0, Common_1.getKavitaAPIKey)(stateManager);
+        const kavitaAPI = yield (0, Common_1.getKavitaAPI)(stateManager);
         const { enableRecursiveSearch, excludeBookTypeLibrary, pageSize } = yield (0, Common_1.getOptions)(stateManager);
         const page = (_a = metadata === null || metadata === void 0 ? void 0 : metadata.page) !== null && _a !== void 0 ? _a : 0;
         const excludeLibraryIds = [];
         if (excludeBookTypeLibrary) {
             const request = createRequestObject({
-                url: `${kavitaAPIUrl}/Library`,
+                url: `${kavitaAPI.url}/Library`,
                 method: 'GET'
             });
             const response = yield requestManager.schedule(request, 1);
@@ -884,7 +875,7 @@ metadata, requestManager, interceptor, stateManager, cacheManager) {
         else {
             if (typeof searchQuery.title === 'string' && searchQuery.title !== '') {
                 const titleRequest = createRequestObject({
-                    url: `${kavitaAPIUrl}/Search/search`,
+                    url: `${kavitaAPI.url}/Search/search`,
                     param: `?queryString=${encodeURIComponent(searchQuery.title)}`,
                     method: 'GET'
                 });
@@ -899,7 +890,7 @@ metadata, requestManager, interceptor, stateManager, cacheManager) {
                     titleSearchTiles.push(createMangaTile({
                         id: `${manga.seriesId}`,
                         title: createIconText({ text: manga.name }),
-                        image: `${kavitaAPIUrl}/image/series-cover?seriesId=${manga.seriesId}&apiKey=${kavitaAPIKey}`
+                        image: `${kavitaAPI.url}/image/series-cover?seriesId=${manga.seriesId}&apiKey=${kavitaAPI.key}`
                     }));
                 }
                 if (enableRecursiveSearch) {
@@ -910,14 +901,14 @@ metadata, requestManager, interceptor, stateManager, cacheManager) {
                             switch (tagName) {
                                 case 'persons':
                                     titleTagRequest = createRequestObject({
-                                        url: `${kavitaAPIUrl}/Series/all`,
+                                        url: `${kavitaAPI.url}/Series/all`,
                                         data: JSON.stringify({ [KAVITA_PERSON_ROLES[item.role]]: [item.id] }),
                                         method: 'POST'
                                     });
                                     break;
                                 default:
                                     titleTagRequest = createRequestObject({
-                                        url: `${kavitaAPIUrl}/Series/all`,
+                                        url: `${kavitaAPI.url}/Series/all`,
                                         data: JSON.stringify({ [tagName]: [item.id] }),
                                         method: 'POST'
                                     });
@@ -930,7 +921,7 @@ metadata, requestManager, interceptor, stateManager, cacheManager) {
                                     titleSearchTiles.push(createMangaTile({
                                         id: `${manga.id}`,
                                         title: createIconText({ text: manga.name }),
-                                        image: `${kavitaAPIUrl}/image/series-cover?seriesId=${manga.id}&apiKey=${kavitaAPIKey}`
+                                        image: `${kavitaAPI.url}/image/series-cover?seriesId=${manga.id}&apiKey=${kavitaAPI.key}`
                                     }));
                                 }
                             }
@@ -954,7 +945,7 @@ metadata, requestManager, interceptor, stateManager, cacheManager) {
                     }
                 }));
                 const peopleRequest = createRequestObject({
-                    url: `${kavitaAPIUrl}/Metadata/people`,
+                    url: `${kavitaAPI.url}/Metadata/people`,
                     method: 'GET'
                 });
                 const peopleResponse = yield requestManager.schedule(peopleRequest, 1);
@@ -966,7 +957,7 @@ metadata, requestManager, interceptor, stateManager, cacheManager) {
                     }
                 }
                 const tagRequst = createRequestObject({
-                    url: `${kavitaAPIUrl}/Series/all`,
+                    url: `${kavitaAPI.url}/Series/all`,
                     data: JSON.stringify(body),
                     method: 'POST'
                 });
@@ -976,7 +967,7 @@ metadata, requestManager, interceptor, stateManager, cacheManager) {
                     tagSearchTiles.push(createMangaTile({
                         id: `${manga.id}`,
                         title: createIconText({ text: manga.name }),
-                        image: `${kavitaAPIUrl}/image/series-cover?seriesId=${manga.id}&apiKey=${kavitaAPIKey}`,
+                        image: `${kavitaAPI.url}/image/series-cover?seriesId=${manga.id}&apiKey=${kavitaAPI.key}`,
                     }));
                 }
             }
