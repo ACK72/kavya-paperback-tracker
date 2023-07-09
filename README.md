@@ -1,4 +1,6 @@
 # Kavya Tracker ![Generic badge](https://img.shields.io/badge/version-1.0.3-blue.svg)
+This repository has been archived, as [Kavya](https://github.com/ACK72/kavya-paperback) now support tracking itself.
+
 Kavya Tracker, A synchronization helper for [Kavya](https://github.com/ACK72/kavya-paperback)
 
 
